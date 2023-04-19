@@ -1,0 +1,12 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: prometheus-istio-collector
+spec:
+  egress:
+    - hosts:
+        - istio-system/*
+        - monitoring/*
+  workloadSelector:
+    labels:
+      prometheus: istio-collector

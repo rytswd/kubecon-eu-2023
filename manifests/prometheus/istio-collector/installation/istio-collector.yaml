@@ -1,0 +1,138 @@
+---
+# Ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: istio-collector
+spec:
+  replicas: 1 # Only for demo
+  image: quay.io/prometheus/prometheus:v2.39.1
+
+  podMetadata:
+    labels:
+      prometheus: istio-collector
+
+    # Taken from https://istio.io/latest/docs/ops/integrations/prometheus/
+    # There is some adujustments to use the remote write handling for Thanos.
+    annotations:
+      sidecar.istio.io/inject: "true"
+      traffic.sidecar.istio.io/includeInboundPorts: "" # Do not intercept any incoming traffic.
+      traffic.sidecar.istio.io/includeOutboundPorts: "9999" # Do not intercept any outbound traffic, except for the ones to Mimir's special port setup.
+      proxy.istio.io/config:
+        | # configure an env variable `OUTPUT_CERTS` to write certificates to the given folder
+        proxyMetadata:
+          OUTPUT_CERTS: /etc/istio-output-certs
+        holdApplicationUntilProxyStarts: true
+      sidecar.istio.io/userVolume: '[{"name": "istio-certs", "emptyDir": {"medium":"Memory"}}]' # mount the shared volume
+      sidecar.istio.io/userVolumeMount: '[{"name": "istio-certs", "mountPath": "/etc/istio-output-certs"}]'
+
+  # Taken from https://istio.io/latest/docs/ops/integrations/prometheus/
+  volumeMounts:
+    - mountPath: /etc/prom-certs/
+      name: istio-certs
+  volumes:
+    - name: istio-certs
+      emptyDir: {}
+
+  portName: http-web
+
+  serviceAccountName: prometheus-istio-collector
+
+  retention: "4h"
+
+  # Because collector has an extremely high cardinality, this is not being persisted as is.
+  # remoteWrite:
+  #   - name: staging-gaia-tokyo
+  #     url: http://mimir-nginx.monitoring.svc.cluster.local/api/v1/push
+
+  serviceMonitorSelector:
+    matchLabels:
+      prometheus: istio-collector
+  podMonitorSelector:
+    matchLabels:
+      prometheus: istio-collector
+  ruleSelector:
+    matchLabels:
+      prometheus: istio-collector
+
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - topologyKey: kubernetes.io/hostname
+          labelSelector:
+            matchLabels:
+              prometheus: istio-collector
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-istio-collector
+  labels:
+    prometheus: istio-collector
+spec:
+  type: ClusterIP
+  ports:
+    - name: http-web
+      port: 9090
+      targetPort: 9090
+    - name: grpc
+      port: 10901
+      targetPort: 10901
+  selector:
+    prometheus: istio-collector
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: prometheus-istio-collector
+  labels:
+    prometheus: istio-collector
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      prometheus: istio-collector
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-istio-collector
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/metrics
+      - services
+      - endpoints
+      - pods
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources:
+      - configmaps
+    verbs: ["get"]
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses
+    verbs: ["get", "list", "watch"]
+  - nonResourceURLs: ["/metrics"]
+    verbs: ["get"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-istio-collector
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-istio-collector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-istio-collector
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-istio-collector
+    namespace: default

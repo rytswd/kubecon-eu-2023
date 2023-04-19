@@ -1,0 +1,17 @@
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: disable-prometheus-istio-collector
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      # The below labels are automatically added when Prometheus is created by
+      # Prometheus Operator.
+      app.kubernetes.io/name: prometheus
+      app.kubernetes.io/managed-by: prometheus-operator
+      prometheus: istio-collector
+  mtls:
+    # Disable talking to Prometheus with mTLS, as Prometheus won't be using
+    # Istio traffic routing.
+    mode: DISABLE

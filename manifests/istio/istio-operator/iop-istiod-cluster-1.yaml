@@ -1,0 +1,37 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: istio-cluster-1
+spec:
+  profile: minimal
+
+  components:
+    pilot:
+      k8s:
+        hpaSpec:
+          minReplicas: 1
+          maxReplicas: 5
+        # Ensure pods are placed in different nodes
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              - topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: istiod
+
+  meshConfig:
+    defaultConfig:
+      holdApplicationUntilProxyStarts: true
+      proxyMetadata:
+        # Enable Istio agent to handle DNS requests for known hosts
+        # Unknown hosts will automatically be resolved using upstream dns servers in resolv.conf
+        ISTIO_META_DNS_CAPTURE: "true"
+
+  values:
+    global:
+      meshID: kubecon-eu-mco
+      network: cluster-1-network
+      multiCluster:
+        clusterName: cluster-1
+        enabled: true # Only used for istio-sidecar-injector ConfigMap

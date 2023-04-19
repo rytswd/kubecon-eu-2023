@@ -1,0 +1,129 @@
+---
+# Ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: istio-federation
+spec:
+  replicas: 1 # Only for demo
+  image: quay.io/prometheus/prometheus:v2.39.1
+
+  podMetadata:
+    labels:
+      prometheus: istio-federation
+
+    # Taken from https://istio.io/latest/docs/ops/integrations/prometheus/
+    # There is some adujustments to use the remote write handling for Thanos.
+    annotations:
+      sidecar.istio.io/inject: "true"
+      traffic.sidecar.istio.io/includeInboundPorts: "" # Do not intercept any incoming traffic.
+      traffic.sidecar.istio.io/includeOutboundPorts: "19291" # Do not intercept any outbound traffic, except for the ones to Thanos's remote write endpoint.
+      proxy.istio.io/config:
+        | # configure an env variable `OUTPUT_CERTS` to write certificates to the given folder
+        proxyMetadata:
+          OUTPUT_CERTS: /etc/istio-output-certs
+        holdApplicationUntilProxyStarts: true
+      sidecar.istio.io/userVolume: '[{"name": "istio-certs", "emptyDir": {"medium":"Memory"}}]' # mount the shared volume
+      sidecar.istio.io/userVolumeMount: '[{"name": "istio-certs", "mountPath": "/etc/istio-output-certs"}]'
+
+  # Taken from https://istio.io/latest/docs/ops/integrations/prometheus/
+  volumeMounts:
+    - mountPath: /etc/prom-certs/
+      name: istio-certs
+  volumes:
+    - name: istio-certs
+      emptyDir: {}
+
+  portName: http-web
+
+  serviceAccountName: prometheus-istio-federation
+
+  retention: "4h" # Could be as short as 2 hours if Thanos can retain the data correctly.
+
+  # Write to Thanos
+  remoteWrite:
+    - name: cluster-1
+      url: http://thanos-receive.monitoring.svc.cluster.local:19291/api/v1/receive
+
+  # Manage external labels
+  replicaExternalLabelName: __replica__
+  externalLabels:
+    cluster: cluster-1
+
+  # Limit the scope of selector references
+  serviceMonitorSelector:
+    matchLabels:
+      prometheus: istio-federation
+  ruleSelector:
+    matchLabels:
+      prometheus: istio-federation
+
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - topologyKey: kubernetes.io/hostname
+          labelSelector:
+            matchLabels:
+              prometheus: istio-federation
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-istio-federation
+  labels:
+    prometheus: istio-federation
+spec:
+  type: ClusterIP
+  ports:
+    - name: http-web
+      port: 9090
+      targetPort: 9090
+    - name: grpc
+      port: 10901
+      targetPort: 10901
+  selector:
+    prometheus: istio-federation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-istio-federation
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/metrics
+      - services
+      - endpoints
+      - pods
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources:
+      - configmaps
+    verbs: ["get"]
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses
+    verbs: ["get", "list", "watch"]
+  - nonResourceURLs: ["/metrics"]
+    verbs: ["get"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-istio-federation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-istio-federation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-istio-federation
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-istio-federation
+    namespace: default

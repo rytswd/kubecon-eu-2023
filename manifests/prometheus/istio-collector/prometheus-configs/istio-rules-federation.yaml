@@ -1,0 +1,587 @@
+---
+# Ref:
+#   https://karlstoney.com/2020/02/25/federated-prometheus-to-reduce-metric-cardinality/
+#   https://gist.github.com/Stono/9ad07fca8c447c3ee3ac2c8a546d8acf
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: istio-federation-preprocessing
+  labels:
+    prometheus: istio-collector
+spec:
+  groups:
+    # These sum(irate()) functions are in separate groups, so they run in parallel
+    - name: istio.workload.istio_request_duration_milliseconds_bucket
+      interval: 10s
+      rules:
+        - record: workload:istio_request_duration_milliseconds_bucket:rate1m
+          expr: |
+            sum(irate(istio_request_duration_milliseconds_bucket{reporter="source", source_workload!=""}[1m]))
+            by (
+              source_workload,
+              source_workload_namespace,
+              destination_service,
+              destination_workload,
+              destination_workload_namespace,
+              le
+            )
+
+    - name: istio.workload.istio_request_bytes_bucket
+      interval: 10s
+      rules:
+        - record: workload:istio_request_bytes_bucket:rate1m
+          expr: |
+            sum(irate(istio_request_bytes_bucket{reporter="source", source_workload!=""}[1m]))
+            by (
+              source_workload,
+              source_workload_namespace,
+              destination_service,
+              destination_workload,
+              destination_workload_namespace,
+              le
+            )
+
+    - name: istio.workload.istio_response_bytes_bucket
+      interval: 10s
+      rules:
+        - record: workload:istio_response_bytes_bucket:rate1m
+          expr: |
+            sum(irate(istio_response_bytes_bucket{reporter="source", source_workload!=""}[1m]))
+            by (
+              source_workload,
+              source_workload_namespace,
+              destination_service,
+              destination_workload,
+              destination_workload_namespace,
+              le
+            )
+
+    # Slightly modified from the reference - source based view
+    - name: istio.workload.istio_requests_total:source
+      interval: 10s
+      rules:
+        - record: federate:istio_requests_total:source:rate1m
+          expr: |
+            sum(irate(istio_requests_total{reporter="source", source_workload!=""}[1m]))
+            by (
+              source_workload,
+              source_workload_namespace,
+              destination_service,
+              destination_workload,
+              destination_workload_namespace,
+              response_code,
+              response_flags
+            )
+
+    # Added on top of the reference - destination based view
+    - name: istio.workload.istio_requests_total:destination
+      interval: 10s
+      rules:
+        - record: federate:istio_requests_total:destination:rate1m
+          expr: |
+            sum(irate(istio_requests_total{reporter="destination", destination_workload!=""}[1m]))
+            by (
+              source_workload,
+              source_workload_namespace,
+              destination_service,
+              destination_workload,
+              destination_workload_namespace,
+              response_code,
+              response_flags
+            )
+
+    # UPSIDER Custom: Increase based, more accurate for exact counting
+    - name: istio.workload.istio_requests_total:source_increase
+      interval: 10s
+      rules:
+        - record: federate:istio_requests_total:source:increase1m
+          expr: |
+            sum(increase(istio_requests_total{reporter="source", source_workload!=""}[1m]))
+            by (
+              source_workload,
+              source_workload_namespace,
+              destination_service,
+              destination_workload,
+              destination_workload_namespace,
+              response_code,
+              response_flags
+            )
+
+    # UPSIDER Custom: Increase based, more accurate for exact counting
+    - name: istio.workload.istio_requests_total:destination_increase
+      interval: 10s
+      rules:
+        - record: federate:istio_requests_total:destination:increase1m
+          expr: |
+            sum(increase(istio_requests_total{reporter="destination", destination_workload!=""}[1m]))
+            by (
+              source_workload,
+              source_workload_namespace,
+              destination_service,
+              destination_workload,
+              destination_workload_namespace,
+              response_code,
+              response_flags
+            )
+
+    # These rules should be fast, and only operate on the aggregates defined above
+    - name: istio.recording-rules-percentiles
+      interval: 10s
+      rules:
+        - record: federate:istio_request_duration_milliseconds_bucket:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.50,
+                workload:istio_request_duration_milliseconds_bucket:rate1m
+              )
+            , "percentile", "50", "source_workload", ".*")
+
+        - record: federate:istio_request_duration_milliseconds_bucket:source:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.50,
+                sum(workload:istio_request_duration_milliseconds_bucket:rate1m)
+                by (
+                  source_workload,
+                  source_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "50", "source_workload", ".*")
+
+        - record: federate:istio_request_duration_milliseconds_bucket:destination:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.50,
+                sum(workload:istio_request_duration_milliseconds_bucket:rate1m)
+                by (
+                  destination_service,
+                  destination_workload,
+                  destination_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "50", "source_workload", ".*")
+
+        - record: federate:istio_request_duration_milliseconds_bucket:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.90,
+                workload:istio_request_duration_milliseconds_bucket:rate1m
+              )
+            , "percentile", "90", "source_workload", ".*")
+
+        - record: federate:istio_request_duration_milliseconds_bucket:source:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.90,
+                sum(workload:istio_request_duration_milliseconds_bucket:rate1m)
+                by (
+                  source_workload,
+                  source_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "90", "source_workload", ".*")
+
+        - record: federate:istio_request_duration_milliseconds_bucket:destination:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.90,
+                sum(workload:istio_request_duration_milliseconds_bucket:rate1m)
+                by (
+                  destination_service,
+                  destination_workload,
+                  destination_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "90", "source_workload", ".*")
+
+        - record: federate:istio_request_duration_milliseconds_bucket:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.95,
+                workload:istio_request_duration_milliseconds_bucket:rate1m
+              )
+            , "percentile", "95", "source_workload", ".*")
+
+        - record: federate:istio_request_duration_milliseconds_bucket:source:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.95,
+                sum(workload:istio_request_duration_milliseconds_bucket:rate1m)
+                by (
+                  source_workload,
+                  source_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "95", "source_workload", ".*")
+
+        - record: federate:istio_request_duration_milliseconds_bucket:destination:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.95,
+                sum(workload:istio_request_duration_milliseconds_bucket:rate1m)
+                by (
+                  destination_service,
+                  destination_workload,
+                  destination_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "95", "source_workload", ".*")
+
+        - record: federate:istio_request_duration_milliseconds_bucket:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.99,
+                workload:istio_request_duration_milliseconds_bucket:rate1m
+              )
+            , "percentile", "99", "source_workload", ".*")
+
+        - record: federate:istio_request_duration_milliseconds_bucket:source:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.99,
+                sum(workload:istio_request_duration_milliseconds_bucket:rate1m)
+                by (
+                  source_workload,
+                  source_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "99", "source_workload", ".*")
+
+        - record: federate:istio_request_duration_milliseconds_bucket:destination:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.99,
+                sum(workload:istio_request_duration_milliseconds_bucket:rate1m)
+                by (
+                  destination_service,
+                  destination_workload,
+                  destination_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "99", "source_workload", ".*")
+
+        # UPSIDER Custom: 100% histogram # TODO: There must be a better way to define this
+        - record: federate:istio_request_duration_milliseconds_bucket:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(1,
+                workload:istio_request_duration_milliseconds_bucket:rate1m
+              )
+            , "percentile", "100", "source_workload", ".*")
+
+        # UPSIDER Custom: 100% histogram # TODO: There must be a better way to define this
+        - record: federate:istio_request_duration_milliseconds_bucket:source:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(1,
+                sum(workload:istio_request_duration_milliseconds_bucket:rate1m)
+                by (
+                  source_workload,
+                  source_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "100", "source_workload", ".*")
+
+        # UPSIDER Custom: 100% histogram # TODO: There must be a better way to define this
+        - record: federate:istio_request_duration_milliseconds_bucket:destination:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(1,
+                sum(workload:istio_request_duration_milliseconds_bucket:rate1m)
+                by (
+                  destination_service,
+                  destination_workload,
+                  destination_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "100", "source_workload", ".*")
+
+        - record: federate:istio_request_bytes_bucket:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.50,
+                workload:istio_request_bytes_bucket:rate1m
+              )
+            , "percentile", "50", "source_workload", ".*")
+
+        - record: federate:istio_request_bytes_bucket:source:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.50,
+                sum(workload:istio_request_bytes_bucket:rate1m)
+                by (
+                  source_workload,
+                  source_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "50", "source_workload", ".*")
+
+        - record: federate:istio_request_bytes_bucket:destination:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.50,
+                sum(workload:istio_request_bytes_bucket:rate1m)
+                by (
+                  destination_service,
+                  destination_workload,
+                  destination_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "50", "source_workload", ".*")
+
+        - record: federate:istio_request_bytes_bucket:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.90,
+                workload:istio_request_bytes_bucket:rate1m
+              )
+            , "percentile", "90", "source_workload", ".*")
+
+        - record: federate:istio_request_bytes_bucket:source:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.90,
+                sum(workload:istio_request_bytes_bucket:rate1m)
+                by (
+                  source_workload,
+                  source_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "90", "source_workload", ".*")
+
+        - record: federate:istio_request_bytes_bucket:destination:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.90,
+                sum(workload:istio_request_bytes_bucket:rate1m)
+                by (
+                  destination_service,
+                  destination_workload,
+                  destination_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "90", "source_workload", ".*")
+
+        - record: federate:istio_request_bytes_bucket:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.95,
+                workload:istio_request_bytes_bucket:rate1m
+              )
+            , "percentile", "95", "source_workload", ".*")
+
+        - record: federate:istio_request_bytes_bucket:source:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.95,
+                sum(workload:istio_request_bytes_bucket:rate1m)
+                by (
+                  source_workload,
+                  source_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "95", "source_workload", ".*")
+
+        - record: federate:istio_request_bytes_bucket:destination:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.95,
+                sum(workload:istio_request_bytes_bucket:rate1m)
+                by (
+                  destination_service,
+                  destination_workload,
+                  destination_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "95", "source_workload", ".*")
+
+        - record: federate:istio_request_bytes_bucket:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.99,
+                workload:istio_request_bytes_bucket:rate1m
+              )
+            , "percentile", "99", "source_workload", ".*")
+
+        - record: federate:istio_request_bytes_bucket:source:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.99,
+                sum(workload:istio_request_bytes_bucket:rate1m)
+                by (
+                  source_workload,
+                  source_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "99", "source_workload", ".*")
+
+        - record: federate:istio_request_bytes_bucket:destination:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.99,
+                sum(workload:istio_request_bytes_bucket:rate1m)
+                by (
+                  destination_service,
+                  destination_workload,
+                  destination_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "99", "source_workload", ".*")
+
+        - record: federate:istio_response_bytes_bucket:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.50,
+                workload:istio_response_bytes_bucket:rate1m
+              )
+            , "percentile", "50", "source_workload", ".*")
+
+        - record: federate:istio_response_bytes_bucket:source:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.50,
+                sum(workload:istio_response_bytes_bucket:rate1m)
+                by (
+                  source_workload,
+                  source_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "50", "source_workload", ".*")
+
+        - record: federate:istio_response_bytes_bucket:destination:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.50,
+                sum(workload:istio_response_bytes_bucket:rate1m)
+                by (
+                  destination_service,
+                  destination_workload,
+                  destination_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "50", "source_workload", ".*")
+
+        - record: federate:istio_response_bytes_bucket:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.90,
+                workload:istio_response_bytes_bucket:rate1m
+              )
+            , "percentile", "90", "source_workload", ".*")
+
+        - record: federate:istio_response_bytes_bucket:source:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.90,
+                sum(workload:istio_response_bytes_bucket:rate1m)
+                by (
+                  source_workload,
+                  source_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "90", "source_workload", ".*")
+
+        - record: federate:istio_response_bytes_bucket:destination:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.90,
+                sum(workload:istio_response_bytes_bucket:rate1m)
+                by (
+                  destination_service,
+                  destination_workload,
+                  destination_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "90", "source_workload", ".*")
+
+        - record: federate:istio_response_bytes_bucket:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.95,
+                workload:istio_response_bytes_bucket:rate1m
+              )
+            , "percentile", "95", "source_workload", ".*")
+
+        - record: federate:istio_response_bytes_bucket:source:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.95,
+                sum(workload:istio_response_bytes_bucket:rate1m)
+                by (
+                  source_workload,
+                  source_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "95", "source_workload", ".*")
+
+        - record: federate:istio_response_bytes_bucket:destination:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.95,
+                sum(workload:istio_response_bytes_bucket:rate1m)
+                by (
+                  destination_service,
+                  destination_workload,
+                  destination_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "95", "source_workload", ".*")
+
+        - record: federate:istio_response_bytes_bucket:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.99,
+                workload:istio_response_bytes_bucket:rate1m
+              )
+            , "percentile", "99", "source_workload", ".*")
+
+        - record: federate:istio_response_bytes_bucket:source:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.99,
+                sum(workload:istio_response_bytes_bucket:rate1m)
+                by (
+                  source_workload,
+                  source_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "99", "source_workload", ".*")
+
+        - record: federate:istio_response_bytes_bucket:destination:rate1m
+          expr: |
+            label_replace(
+              histogram_quantile(0.99,
+                sum(workload:istio_response_bytes_bucket:rate1m)
+                by (
+                  destination_service,
+                  destination_workload,
+                  destination_workload_namespace,
+                  le
+                )
+              )
+            , "percentile", "99", "source_workload", ".*")

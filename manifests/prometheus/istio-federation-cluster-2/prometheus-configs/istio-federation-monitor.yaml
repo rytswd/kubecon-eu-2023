@@ -1,0 +1,38 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: istio-federation
+  labels:
+    prometheus: istio-federation
+spec:
+  namespaceSelector:
+    matchNames:
+      - monitoring
+  selector:
+    matchLabels:
+      prometheus: istio-collector # Metrics from Prometheus Istio Collector
+  endpoints:
+    - interval: 10s
+      scrapeTimeout: 10s
+      params:
+        "match[]":
+          # Federation is done against "federate:" prefix only for now.
+          # Ref:
+          #   "Configuring Federation" section in
+          #   https://karlstoney.com/2020/02/25/federated-prometheus-to-reduce-metric-cardinality/
+          - '{__name__=~"federate:(.*)"}'
+          # - '{__name__=~"workload:(.*)"}'
+          # - '{__name__=~"pilot(.*)"}'
+      path: /federate
+      targetPort: 9090
+      honorLabels: true
+      metricRelabelings:
+        # Remove prefix of "federate:"
+        - sourceLabels: ["__name__"]
+          regex: "federate:(.*)"
+          # regex: "workload:(.*)"
+          targetLabel: "__name__"
+          action: replace
+        # Official documentation is not followed because the cardinality is too high
+        # Ref: https://istio.io/latest/docs/ops/best-practices/observability/#federation-using-workload-level-aggregated-metrics

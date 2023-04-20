@@ -21,6 +21,7 @@ spec:
                     app: istiod
 
   meshConfig:
+    accessLogFile: /dev/stdout
     defaultConfig:
       holdApplicationUntilProxyStarts: true
       proxyMetadata:

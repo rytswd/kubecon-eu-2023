@@ -8746,6 +8746,7 @@ data:
     networks: {}
 
   mesh: |-
+    accessLogFile: /dev/stdout
     defaultConfig:
       discoveryAddress: istiod.istio-system.svc:15012
       holdApplicationUntilProxyStarts: true

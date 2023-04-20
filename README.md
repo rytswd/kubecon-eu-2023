@@ -27,6 +27,10 @@ The demo during the talk was fully based on the input in this repository. You sh
 
 Also, before this talk goes available on YouTube, I will be also working to create some more example setup for using other tools.
 
+### About Demo Script
+
+During the presentation, I cheated 🫣 a little by using a script to mock the typing effect. This is backed by a simple shell script https://github.com/rytswd/cli-demo-helper.
+
 
 ## 🌅 Contents
 

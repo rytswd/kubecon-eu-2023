@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 
 # shellcheck disable=SC2034
 demo_helper_type_speed=5000
@@ -10,8 +11,8 @@ comment_g "1. Create temporary directory."
 execute "mkdir /tmp/kubecon-mco-demo; cd /tmp/kubecon-mco-demo"
 execute "ls -lF"
 comment "1.1. Copy the demo repository."
-execute "curl -sSL https://codeload.github.com/rytswd/kubecon-eu-2023/tar.gz/main \\
-    -o kubecon-eu-2023.tar.gz"
+execute 'curl -sSL https://codeload.github.com/rytswd/kubecon-eu-2023/tar.gz/main \
+    -o kubecon-eu-2023.tar.gz'
 
 comment_g "2. CA Certificates"
 comment "2.1. Copy CA Certificate generation scripts from Istio."
@@ -35,40 +36,40 @@ kubectl create namespace --context kind-cluster-3 istio-system"
 
 # shellcheck disable=SC2016
 comment '2.5. Create `cacerts` secret in each cluster.'
-execute "kubectl create secret --context kind-cluster-1 \\
-    generic cacerts -n istio-system \\
-    --from-file=./certs/cluster-1/ca-cert.pem \\
-    --from-file=./certs/cluster-1/ca-key.pem \\
-    --from-file=./certs/cluster-1/root-cert.pem \\
+execute 'kubectl create secret --context kind-cluster-1 \
+    generic cacerts -n istio-system \
+    --from-file=./certs/cluster-1/ca-cert.pem \
+    --from-file=./certs/cluster-1/ca-key.pem \
+    --from-file=./certs/cluster-1/root-cert.pem \
     --from-file=./certs/cluster-1/cert-chain.pem;
-kubectl create secret --context kind-cluster-2 \\
-    generic cacerts -n istio-system \\
-    --from-file=./certs/cluster-2/ca-cert.pem \\
-    --from-file=./certs/cluster-2/ca-key.pem \\
-    --from-file=./certs/cluster-2/root-cert.pem \\
+kubectl create secret --context kind-cluster-2 \
+    generic cacerts -n istio-system \
+    --from-file=./certs/cluster-2/ca-cert.pem \
+    --from-file=./certs/cluster-2/ca-key.pem \
+    --from-file=./certs/cluster-2/root-cert.pem \
     --from-file=./certs/cluster-2/cert-chain.pem;
-kubectl create secret --context kind-cluster-3 \\
-    generic cacerts -n istio-system \\
-    --from-file=./certs/cluster-3/ca-cert.pem \\
-    --from-file=./certs/cluster-3/ca-key.pem \\
-    --from-file=./certs/cluster-3/root-cert.pem \\
-    --from-file=./certs/cluster-3/cert-chain.pem"
+kubectl create secret --context kind-cluster-3 \
+    generic cacerts -n istio-system \
+    --from-file=./certs/cluster-3/ca-cert.pem \
+    --from-file=./certs/cluster-3/ca-key.pem \
+    --from-file=./certs/cluster-3/root-cert.pem \
+    --from-file=./certs/cluster-3/cert-chain.pem'
 
 comment_g "3. Install Istio."
 comment "3.1. Copy Istio installation manifests."
-execute "tar -xz -f kubecon-eu-2023.tar.gz \\
-    --strip=2 kubecon-eu-2023-main/manifests/istio/installation"
+execute 'tar -xz -f kubecon-eu-2023.tar.gz \
+    --strip=2 kubecon-eu-2023-main/manifests/istio/installation'
 
 comment "3.2. Label istio-system namespace with the network topology."
-execute "kubectl label namespace \\
-    --context=kind-cluster-1 \\
+execute 'kubectl label namespace \
+    --context=kind-cluster-1 \
     istio-system topology.istio.io/network=cluster-1-network;
-kubectl label namespace \\
-    --context=kind-cluster-2 \\
+kubectl label namespace \
+    --context=kind-cluster-2 \
     istio-system topology.istio.io/network=cluster-2-network;
-kubectl label namespace \\
-    --context=kind-cluster-3 \\
-    istio-system topology.istio.io/network=cluster-3-network"
+kubectl label namespace \
+    --context=kind-cluster-3 \
+    istio-system topology.istio.io/network=cluster-3-network'
 
 comment "3.3. Install istiod in each cluster."
 execute "kubectl apply --context kind-cluster-1 -f ./istio/installation/istiod-manifests-cluster-1.yaml;
@@ -87,49 +88,49 @@ kubectl apply --context kind-cluster-3 -f ./istio/installation/istio-gateway-man
 
 comment_g "4. Establish Multi-Cluster Connections."
 comment "4.1. Copy Gateway resource, which will be applied to all the clusters."
-execute "tar -xz -f kubecon-eu-2023.tar.gz \\
-    --strip=2 kubecon-eu-2023-main/manifests/istio/usage/cross-network-gateway.yaml"
+execute 'tar -xz -f kubecon-eu-2023.tar.gz \
+    --strip=2 kubecon-eu-2023-main/manifests/istio/usage/cross-network-gateway.yaml'
 comment "4.2. Apply Gateway resource to all the clusters."
 execute "kubectl apply --context kind-cluster-1 -f ./istio/usage/cross-network-gateway.yaml;
 kubectl apply --context kind-cluster-2 -f ./istio/usage/cross-network-gateway.yaml;
 kubectl apply --context kind-cluster-3 -f ./istio/usage/cross-network-gateway.yaml"
 comment "4.3. Create remote secrets for each cluster to connect to other clusters."
 comment "4.3.1 For cluster-1 -> cluster-2"
-execute "
+execute '
 CONTEXT=kind-cluster-1
 CLUSTER=cluster-2
 
-kubectl --context \$CONTEXT --namespace istio-system create secret generic istio-remote-secret-\$CLUSTER --from-file=\$CLUSTER=\${CLUSTER}-kubeconfig.yaml
-kubectl --context \$CONTEXT --namespace istio-system annotate secret istio-remote-secret-\$CLUSTER networking.istio.io/cluster=\$CLUSTER
-kubectl --context \$CONTEXT --namespace istio-system label secret istio-remote-secret-\$CLUSTER istio/multiCluster=true
-"
+kubectl --context $CONTEXT --namespace istio-system create secret generic istio-remote-secret-$CLUSTER --from-file=$CLUSTER=${CLUSTER}-kubeconfig.yaml
+kubectl --context $CONTEXT --namespace istio-system annotate secret istio-remote-secret-$CLUSTER networking.istio.io/cluster=$CLUSTER
+kubectl --context $CONTEXT --namespace istio-system label secret istio-remote-secret-$CLUSTER istio/multiCluster=true
+'
 comment "4.3.2 For cluster-2 -> cluster-1"
-execute "
+execute '
 CONTEXT=kind-cluster-2
 CLUSTER=cluster-1
 
-kubectl --context \$CONTEXT --namespace istio-system create secret generic istio-remote-secret-\$CLUSTER --from-file=\$CLUSTER=\${CLUSTER}-kubeconfig.yaml
-kubectl --context \$CONTEXT --namespace istio-system annotate secret istio-remote-secret-\$CLUSTER networking.istio.io/cluster=\$CLUSTER
-kubectl --context \$CONTEXT --namespace istio-system label secret istio-remote-secret-\$CLUSTER istio/multiCluster=true
-"
+kubectl --context $CONTEXT --namespace istio-system create secret generic istio-remote-secret-$CLUSTER --from-file=$CLUSTER=${CLUSTER}-kubeconfig.yaml
+kubectl --context $CONTEXT --namespace istio-system annotate secret istio-remote-secret-$CLUSTER networking.istio.io/cluster=$CLUSTER
+kubectl --context $CONTEXT --namespace istio-system label secret istio-remote-secret-$CLUSTER istio/multiCluster=true
+'
 comment "4.3.3 For cluster-1 -> cluster-3"
-execute "
+execute '
 CONTEXT=kind-cluster-1
 CLUSTER=cluster-3
 
-kubectl --context \$CONTEXT --namespace istio-system create secret generic istio-remote-secret-\$CLUSTER --from-file=\$CLUSTER=\${CLUSTER}-kubeconfig.yaml
-kubectl --context \$CONTEXT --namespace istio-system annotate secret istio-remote-secret-\$CLUSTER networking.istio.io/cluster=\$CLUSTER
-kubectl --context \$CONTEXT --namespace istio-system label secret istio-remote-secret-\$CLUSTER istio/multiCluster=true
-"
+kubectl --context $CONTEXT --namespace istio-system create secret generic istio-remote-secret-$CLUSTER --from-file=$CLUSTER=${CLUSTER}-kubeconfig.yaml
+kubectl --context $CONTEXT --namespace istio-system annotate secret istio-remote-secret-$CLUSTER networking.istio.io/cluster=$CLUSTER
+kubectl --context $CONTEXT --namespace istio-system label secret istio-remote-secret-$CLUSTER istio/multiCluster=true
+'
 comment "4.3.4 For cluster-2 -> cluster-3"
-execute "
+execute '
 CONTEXT=kind-cluster-2
 CLUSTER=cluster-3
 
-kubectl --context \$CONTEXT --namespace istio-system create secret generic istio-remote-secret-\$CLUSTER --from-file=\$CLUSTER=\${CLUSTER}-kubeconfig.yaml
-kubectl --context \$CONTEXT --namespace istio-system annotate secret istio-remote-secret-\$CLUSTER networking.istio.io/cluster=\$CLUSTER
-kubectl --context \$CONTEXT --namespace istio-system label secret istio-remote-secret-\$CLUSTER istio/multiCluster=true
-"
+kubectl --context $CONTEXT --namespace istio-system create secret generic istio-remote-secret-$CLUSTER --from-file=$CLUSTER=${CLUSTER}-kubeconfig.yaml
+kubectl --context $CONTEXT --namespace istio-system annotate secret istio-remote-secret-$CLUSTER networking.istio.io/cluster=$CLUSTER
+kubectl --context $CONTEXT --namespace istio-system label secret istio-remote-secret-$CLUSTER istio/multiCluster=true
+'
 
 comment_g "5. Install Multi-Cluster Prometheus Setup."
 comment "5.1. Create monitoring namespace."
@@ -137,23 +138,22 @@ execute "kubectl create namespace --context kind-cluster-1 monitoring;
 kubectl create namespace --context kind-cluster-2 monitoring;
 kubectl create namespace --context kind-cluster-3 monitoring"
 comment "5.2. Label monitoring namespace for Istio sidecar."
-execute "kubectl label --context kind-cluster-1 \\
+execute 'kubectl label --context kind-cluster-1 \
     namespace monitoring istio-injection=enabled;
-kubectl label --context kind-cluster-2 \\
+kubectl label --context kind-cluster-2 \
     namespace monitoring istio-injection=enabled;
-kubectl label --context kind-cluster-3 \\
-    namespace monitoring istio-injection=enabled"
+kubectl label --context kind-cluster-3 \
+    namespace monitoring istio-injection=enabled'
 comment "5.3. Copy all Prometheus related definitions."
-execute "tar -xz -f kubecon-eu-2023.tar.gz \\
-    --strip=2 kubecon-eu-2023-main/manifests/prometheus"
+execute 'tar -xz -f kubecon-eu-2023.tar.gz \
+    --strip=2 kubecon-eu-2023-main/manifests/prometheus'
 comment "5.4. Install Prometheus Operator in each cluster."
-# execute "kubectl apply --context kind-cluster-1 --server-side \\
+# execute 'kubectl apply --context kind-cluster-1 --server-side \
 #         -f https://github.com/prometheus-operator/prometheus-operator/raw/v0.64.0/bundle.yaml;
-# kubectl apply --context kind-cluster-2 --server-side \\
+# kubectl apply --context kind-cluster-2 --server-side \
 #         -f https://github.com/prometheus-operator/prometheus-operator/raw/v0.64.0/bundle.yaml;
-# kubectl apply --context kind-cluster-3 --server-side \\
-#         -f https://github.com/prometheus-operator/prometheus-operator/raw/v0.64.0/bundle.yaml"
-# # Consider replacing this for non-default namespace installation.
+# kubectl apply --context kind-cluster-3 --server-side \
+#         -f https://github.com/prometheus-operator/prometheus-operator/raw/v0.64.0/bundle.yaml'
 execute "kustomize build prometheus/operator-installation | kubectl apply --context kind-cluster-1 --server-side -f -;
 kustomize build prometheus/operator-installation | kubectl apply --context kind-cluster-2 --server-side -f -;
 kustomize build prometheus/operator-installation | kubectl apply --context kind-cluster-3 --server-side -f -"
@@ -169,7 +169,7 @@ kustomize build prometheus/istio-federation-cluster-3 | kubectl apply --context 
 
 comment "6. Install Thanos."
 comment "6.1. Install Thanos to cluster-3."
-execute "helm install --repo https://charts.bitnami.com/bitnami \\
-    --kube-context kind-cluster-3 \\
-    --set receive.enabled=true \\
-    thanos thanos -n monitoring"
+execute 'helm install --repo https://charts.bitnami.com/bitnami \
+    --kube-context kind-cluster-3 \
+    --set receive.enabled=true \
+    thanos thanos -n monitoring'

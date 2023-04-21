@@ -34,7 +34,15 @@ During the presentation, I cheated 🫣 a little by using a script to mock the t
 
 ## 🌅 Contents
 
-To be updated
+### Simplest, All In One
+
+``` sh
+bash <(curl -sSL 'https://raw.githubusercontent.com/rytswd/kubecon-eu-2023/main/demo-all.sh')
+```
+
+### Other
+
+More to be added...
 
 
 ## 🔎 References

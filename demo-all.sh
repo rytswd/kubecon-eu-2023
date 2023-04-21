@@ -249,11 +249,13 @@ kubectl patch svc kubernetes \\
 
 
 comment_g "1. Create temporary directory."
-execute "mkdir /tmp/kubecon-mco-demo; cd /tmp/kubecon-mco-demo"
+# execute "mkdir /tmp/kubecon-mco-demo; cd /tmp/kubecon-mco-demo"
+comment_w "Skipping this step, as it is covered from the extra step above."
 execute "ls -lF"
 comment "1.1. Copy the demo repository."
-execute 'curl -sSL https://codeload.github.com/rytswd/kubecon-eu-2023/tar.gz/main \
-    -o kubecon-eu-2023.tar.gz'
+comment_w "Skipping this step, as it is covered from the extra step above."
+# execute 'curl -sSL https://codeload.github.com/rytswd/kubecon-eu-2023/tar.gz/main \
+#     -o kubecon-eu-2023.tar.gz'
 
 comment_g "2. CA Certificates"
 comment "2.1. Copy CA Certificate generation scripts from Istio."
@@ -408,3 +410,14 @@ execute 'helm install --repo https://charts.bitnami.com/bitnami \
     --kube-context kind-cluster-3 \
     --set receive.enabled=true \
     thanos thanos -n monitoring'
+
+comment_w "Now, you have all the setup in place 🎉
+
+When you are done, you can run the following command to delete all the clusters created by this script.
+
+{
+    kind delete cluster --name cluster-1
+    kind delete cluster --name cluster-2
+    kind delete cluster --name cluster-3
+}
+"

@@ -15,36 +15,33 @@ execute 'curl -sSL https://codeload.github.com/rytswd/kubecon-eu-2023/tar.gz/mai
 comment_g "Ex 2. Create KinD clusters."
 comment "Ex 2.1. Get KinD configs specific for the demo."
 execute 'tar -xz -f kubecon-eu-2023.tar.gz \
-    --strip=3 kubecon-eu-2023-main/tools/kind-config/cluster-1-v1.26.yaml;
-tar -xz -f kubecon-eu-2023.tar.gz \
-    --strip=3 kubecon-eu-2023-main/tools/kind-config/cluster-2-v1.26.yaml;
-tar -xz -f kubecon-eu-2023.tar.gz \
-    --strip=3 kubecon-eu-2023-main/tools/kind-config/cluster-3-v1.26.yaml;'
+    --strip=2 kubecon-eu-2023-main/tools/kind-config'
 
-comment_r "NOTE: Based on your Docker network setup, you will need to update the following files:"
-comment_w "
-          - cluster-1-v1.26.yaml
-          - cluster-2-v1.26.yaml
-          - cluster-3-v1.26.yaml
+DOCKER_NETWORK_CIDR=$(docker network inspect kind | jq -r ".[].IPAM.Config[0].Subnet")
 
-      In each file, ensure that kubeadmConfigPatches -> apiServer -> certSANs matches with the following CIDR:
+comment_r "NOTE:"
+comment_w "Based on your Docker network setup, you will need to update the following files:
+    - ./kind-config/cluster-1-v1.26.yaml
+    - ./kind-config/cluster-2-v1.26.yaml
+    - ./kind-config/cluster-3-v1.26.yaml
+
+    In each file, ensure that kubeadmConfigPatches -> apiServer -> certSANs matches with the following CIDR:
+
+    $DOCKER_NETWORK_CIDR
+
+    Update the files before moving onto the next steps.
 "
-
-docker network inspect kind | jq -r ".[].IPAM.Config[0].Subnet"
-
-comment_w "
-      Update the files before moving onto the next steps."
 
 comment "Ex 2.2. Start up KinD clusters."
 execute 'kind create cluster \
     --name cluster-1 \
-    --config cluster-1-v1.26.yaml;
+    --config ./kind-config/cluster-1-v1.26.yaml;
 kind create cluster \
     --name cluster-2 \
-    --config cluster-2-v1.26.yaml;
+    --config ./kind-config/cluster-2-v1.26.yaml;
 kind create cluster \
     --name cluster-3 \
-    --config cluster-3-v1.26.yaml;'
+    --config ./kind-config/cluster-3-v1.26.yaml;'
 
 comment "Ex 2.3. Export kubeconfig for each cluster."
 execute 'kind export kubeconfig \
@@ -73,19 +70,18 @@ comment "Ex 3.3. Get MetalLB configs specific for the demo."
 execute 'tar -xz -f kubecon-eu-2023.tar.gz \
     --strip=2 kubecon-eu-2023-main/tools/metallb/usage'
 
-comment_r "NOTE: Based on your Docker network setup, you will need to update the following files:"
-comment_w "
-          - ./metallb/usage/metallb-cluster-1.yaml
-          - ./metallb/usage/metallb-cluster-2.yaml
-          - ./metallb/usage/metallb-cluster-3.yaml
+comment_r "NOTE:"
+comment_w "Based on your Docker network setup, you will need to update the following files:
+    - ./metallb/usage/metallb-cluster-1.yaml
+    - ./metallb/usage/metallb-cluster-2.yaml
+    - ./metallb/usage/metallb-cluster-3.yaml
 
-      In each file, ensure that kubeadmConfigPatches -> apiServer -> certSANs matches with the following CIDR:
+    In each file, ensure that kubeadmConfigPatches -> apiServer -> certSANs matches with the following CIDR:
+
+    $DOCKER_NETWORK_CIDR
+
+    Update the files before moving onto the next steps.
 "
-
-docker network inspect kind | jq -r ".[].IPAM.Config[0].Subnet"
-
-comment_w "
-      Update the files before moving onto the next steps."
 
 comment "Ex 3.4. Configure MetalLB."
 execute "kubectl apply --context kind-cluster-1 -f ./metallb/usage/metallb-cluster-1.yaml;

@@ -148,12 +148,6 @@ comment "5.3. Copy all Prometheus related definitions."
 execute 'tar -xz -f kubecon-eu-2023.tar.gz \
     --strip=2 kubecon-eu-2023-main/manifests/prometheus'
 comment "5.4. Install Prometheus Operator in each cluster."
-# execute 'kubectl apply --context kind-cluster-1 --server-side \
-#         -f https://github.com/prometheus-operator/prometheus-operator/raw/v0.64.0/bundle.yaml;
-# kubectl apply --context kind-cluster-2 --server-side \
-#         -f https://github.com/prometheus-operator/prometheus-operator/raw/v0.64.0/bundle.yaml;
-# kubectl apply --context kind-cluster-3 --server-side \
-#         -f https://github.com/prometheus-operator/prometheus-operator/raw/v0.64.0/bundle.yaml'
 execute "kustomize build prometheus/operator-installation | kubectl apply --context kind-cluster-1 --server-side -f -;
 kustomize build prometheus/operator-installation | kubectl apply --context kind-cluster-2 --server-side -f -;
 kustomize build prometheus/operator-installation | kubectl apply --context kind-cluster-3 --server-side -f -"

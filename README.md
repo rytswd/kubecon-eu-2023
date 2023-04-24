@@ -52,9 +52,19 @@ Also, please note that having 3 KinD clusters will require some significant comp
 bash <(curl -sSL 'https://raw.githubusercontent.com/rytswd/kubecon-eu-2023/main/demo-all.sh')
 ```
 
-### Other
+The above script will give you the typing effect I used in my demo, and will set up the same exact setup.
 
-More to be added...
+### Detailed Steps
+
+Please check out [Demo Steps](demo-steps.md) for details.
+
+### Clean Up
+
+To be updated
+
+### Troubleshooting
+
+To be updated
 
 
 ## 🔎 References

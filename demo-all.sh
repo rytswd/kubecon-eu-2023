@@ -153,6 +153,14 @@ write_prompt
 
 trap "echo" EXIT
 
+comment_w "Welcome to the demo!
+
+This script will walk you through the demo steps.
+Simply wait for the prompt to appear, and press enter to continue.
+
+Firstly, we will start with extra steps of local cluster configurations.
+If you would like to use your own clusters, please refer to https://github.com/rytswd/kubecon-eu-2023 repository."
+
 
 comment_g "Ex 1. Create temporary directory."
 execute "mkdir /tmp/kubecon-mco-demo; cd /tmp/kubecon-mco-demo"
@@ -247,6 +255,10 @@ kubectl patch svc kubernetes \\
     --context kind-cluster-3 \\
     -p '{\"spec\": {\"type\": \"LoadBalancer\"}}';"
 
+
+comment_w "Now, the KinD configurations have been completed 🎉
+
+From here, we will use these clusters for the multi-cluster setup."
 
 comment_g "1. Create temporary directory."
 # execute "mkdir /tmp/kubecon-mco-demo; cd /tmp/kubecon-mco-demo"
@@ -413,11 +425,29 @@ execute 'helm install --repo https://charts.bitnami.com/bitnami \
 
 comment_w "Now, you have all the setup in place 🎉
 
-When you are done, you can run the following command to delete all the clusters created by this script.
+You can now check cluster-3, which acts as the central observability cluster using Thanos.
+
+Thanos Query Frontend exposes 10902 port by default, and you can use the following command to test:
+
+{
+    kubectl port-forward --context kind-cluster-3 \
+        svc/thanos-query-frontend \
+        10902:10902 -n monitoring
+}
+
+Then, you can access the Thanos Query Frontend UI at http://localhost:10902."
+
+comment_w "Once you are done, you can run the following command to delete all the clusters created by this script.
 
 {
     kind delete cluster --name cluster-1
     kind delete cluster --name cluster-2
     kind delete cluster --name cluster-3
+}
+
+Also, you can delete all the files used by this script by running the following command:
+
+{
+    rm -rf /tmp/kubecon-eu-2023
 }
 "

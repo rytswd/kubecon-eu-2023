@@ -177,9 +177,9 @@ DOCKER_NETWORK_CIDR=$(docker network inspect kind | jq -r ".[].IPAM.Config[0].Su
 
 comment_r "NOTE:"
 comment_w "Based on your Docker network setup, you will need to update the following files:
-    - ./kind-config/cluster-1-v1.26.yaml
-    - ./kind-config/cluster-2-v1.26.yaml
-    - ./kind-config/cluster-3-v1.26.yaml
+    - /tmp/kubecon-mco-demo/kind-config/cluster-1-v1.26.yaml
+    - /tmp/kubecon-mco-demo/kind-config/cluster-2-v1.26.yaml
+    - /tmp/kubecon-mco-demo/kind-config/cluster-3-v1.26.yaml
 
     In each file, ensure that kubeadmConfigPatches -> apiServer -> certSANs matches with the following CIDR:
 
@@ -228,9 +228,9 @@ execute 'tar -xz -f kubecon-eu-2023.tar.gz \
 
 comment_r "NOTE:"
 comment_w "Based on your Docker network setup, you will need to update the following files:
-    - ./metallb/usage/metallb-cluster-1.yaml
-    - ./metallb/usage/metallb-cluster-2.yaml
-    - ./metallb/usage/metallb-cluster-3.yaml
+    - /tmp/kubecon-mco-demo/metallb/usage/metallb-cluster-1.yaml
+    - /tmp/kubecon-mco-demo/metallb/usage/metallb-cluster-2.yaml
+    - /tmp/kubecon-mco-demo/metallb/usage/metallb-cluster-3.yaml
 
     In each file, ensure that kubeadmConfigPatches -> apiServer -> certSANs matches with the following CIDR:
 

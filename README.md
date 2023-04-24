@@ -34,6 +34,18 @@ During the presentation, I cheated 🫣 a little by using a script to mock the t
 
 ## 🌅 Contents
 
+### Prerequisites
+
+In order to run through the demo steps, you will need the following tools:
+
+- Docker
+- kubectl
+- kind
+- kustomize
+- helm
+
+Also, please note that having 3 KinD clusters will require some significant compute resource on your machine.
+
 ### Simplest, All In One
 
 ``` sh

@@ -232,7 +232,7 @@ comment_w "Based on your Docker network setup, you will need to update the follo
     - /tmp/kubecon-mco-demo/metallb/usage/metallb-cluster-2.yaml
     - /tmp/kubecon-mco-demo/metallb/usage/metallb-cluster-3.yaml
 
-    In each file, ensure that kubeadmConfigPatches -> apiServer -> certSANs matches with the following CIDR:
+    In each file, ensure that IPAddressPool spec.addresses matches with the following CIDR:
 
     $DOCKER_NETWORK_CIDR
 

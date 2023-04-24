@@ -14,6 +14,8 @@ Original Recording: _To be updated_
 
 Original Slide: https://dub.sh/kubecon-eu-2023-mco
 
+Follow-up Video: _To be added_
+
 ## 🌄 About This Repository
 
 This repository holds the supplementary materials for my talk at KubeCon.
@@ -30,6 +32,12 @@ Also, before this talk goes available on YouTube, I will be also working to crea
 ### About Demo Script
 
 During the presentation, I cheated 🫣 a little by using a script to mock the typing effect. This is backed by a simple shell script https://github.com/rytswd/cli-demo-helper.
+
+### Why X? Why Not Y?
+
+I designed my talk specifically on "moving parts" around multi-cluster observability. The solutions such as `istioctl` provide friendly UX for Istio management, but from my own experience, it is crucial to understand those "moving parts" in order to handle even more complex scenarios.
+
+The demo was meant to be something anyone can replicate in their own environment. Once you follow the demo details, you should be able to see where the actual "moving parts" are, and how to tackle them for your use cases.
 
 
 ## 🌅 Contents

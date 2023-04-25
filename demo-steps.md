@@ -14,11 +14,11 @@ In order to run through the demo steps, you will need the following tools:
 
 Also, please note that having 3 KinD clusters will require some significant compute resource on your machine.
 
-## Steps
+## About Each Step
 
-Before going into the actaul multi-cluster configurations, we will go through local cluster setup using KinD. You can skip all those extra steps if you wish to use a different cluster.
+Before going into the actaul multi-cluster configurations, we will go through local cluster setup using KinD. You can skip all those "extra" steps if you wish to use a different cluster.
 
-### Step 1. Create Temp Directory for Demo
+## Step 1. Create Temp Directory for Demo
 
 All the resources we will use would be placed in a temporary directory.
 

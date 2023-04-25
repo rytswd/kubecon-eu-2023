@@ -700,6 +700,9 @@ In order to simulate more realistic use cases, the steps here will make use of m
     # the installation path. In order to make the installation simple enough,
     # we are using the official installation with kustomize to target the
     # `monitoring` namespace.
+    # Also, because the Prometheus Operator CRDs are quite lengthy and exceeds
+    # the limit for client side apply, we are using `--server-side` flag to have
+    # them applied on the server instead.
     kustomize build prometheus/operator-installation | 
         kubectl apply --context kind-cluster-1 --server-side -f -
     kustomize build prometheus/operator-installation | 

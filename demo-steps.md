@@ -145,7 +145,7 @@ This step isn't required if you are to work out the network setup using NodePort
     kubectl apply --context kind-cluster-2 \
     -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
     kubectl apply --context kind-cluster-3 \
-    -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml"
+    -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
 }
 ```
 

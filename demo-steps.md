@@ -672,7 +672,7 @@ In order to simulate more realistic use cases, the steps here will make use of m
     kubectl label --context kind-cluster-2 \
         namespace monitoring istio-injection=enabled
     kubectl label --context kind-cluster-3 \
-        namespace monitoring istio-injection=enable
+        namespace monitoring istio-injection=enabled
 }
 ```
 

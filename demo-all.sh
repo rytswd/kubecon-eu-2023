@@ -444,7 +444,7 @@ Thanos Query Frontend exposes 10902 port by default, and you can use the followi
 {
     kubectl port-forward --context kind-cluster-3 \
         svc/thanos-query-frontend \
-        10902:10902 -n monitoring
+        9090:9090 -n monitoring
 }
 
 Then, you can access the Thanos Query Frontend UI at http://localhost:10902.

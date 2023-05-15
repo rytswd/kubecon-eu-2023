@@ -124,6 +124,38 @@ spec:
               response_flags
             )
 
+    - name: istio.workload.istio_tcp_sent_bytes_total:source
+      interval: 10s
+      rules:
+        - record: federate:istio_tcp_sent_bytes_total:source:rate1m
+          expr: |
+            sum(irate(istio_tcp_sent_bytes_total{reporter="source", source_workload!=""}[1m]))
+            by (
+              source_workload,
+              source_workload_namespace,
+              destination_service,
+              destination_workload,
+              destination_workload_namespace,
+              response_code,
+              response_flags
+            )
+
+    - name: istio.workload.istio_tcp_received_bytes_total:source
+      interval: 10s
+      rules:
+        - record: federate:istio_tcp_received_bytes_total:source:rate1m
+          expr: |
+            sum(irate(istio_tcp_received_bytes_total{reporter="source", source_workload!=""}[1m]))
+            by (
+              source_workload,
+              source_workload_namespace,
+              destination_service,
+              destination_workload,
+              destination_workload_namespace,
+              response_code,
+              response_flags
+            )
+
     # These rules should be fast, and only operate on the aggregates defined above
     - name: istio.recording-rules-percentiles
       interval: 10s

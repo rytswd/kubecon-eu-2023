@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-datasources
+  labels:
+    grafana_datasource: 'true' # default value for: sidecar.datasources.label
+stringData:
+  prom.yaml: |-
+    apiVersion: 1
+    datasources:
+    - name: Thanos
+      type: prometheus
+      # Access mode - proxy (server in the UI) or direct (browser in the UI).
+      access: proxy
+      url: http://thanos-query-frontend:9090
+      jsonData:
+        httpMethod: POST
+        manageAlerts: true
+        prometheusType: Thanos
+        cacheLevel: 'High'

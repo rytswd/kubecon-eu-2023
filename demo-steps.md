@@ -823,6 +823,45 @@ Also, with this approach, Thanos is only needed in the "target" cluster where th
 }
 ```
 
+### Step 9.2. Install Grafana to `cluster-3`
+
+```sh
+{
+    # Similarly to Thanos, we are deploying Grafana into `cluster-3`. It will
+    # use Thanos as the data source. Hence, Grafana will have access to the
+    # telemetry data from all environments.
+    #
+    # Additionally, we set sidecars for dashboards and data sources to watch all
+    # config maps (or secrets) and dynamically import required resources.
+    helm install --repo https://grafana.github.io/helm-charts \
+        --kube-context kind-cluster-3 \
+        --set sidecar.dashboards.enabled=true \
+        --set sidecar.datasources.enabled=true \
+        grafana grafana -n monitoring
+}
+```
+
+### Step 9.3. Pull Out Grafana Related Configurations
+
+```sh
+{
+    # Like Prometheus configurations, we can pull out the relevant Grafana
+    # related configurations around Grafana Data Source and Dashboards from
+    # kubecon-eu-2023.tar.gz, using `--strip` argument to simplify the directory
+    # structure.
+    tar -xz -f kubecon-eu-2023.tar.gz \
+        --strip=2 kubecon-eu-2023-main/manifests/grafana
+}
+```
+
+### Step 9.4. Configure Grafana's Data Source and Create Sample Dashboard
+
+```sh
+{
+    kustomize build grafana |
+        kubectl apply --context kind-cluster-3 -f -
+}
+```
 
 ## Step 10. Play and Explore 🎢
 

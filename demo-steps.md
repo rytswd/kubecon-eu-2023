@@ -126,7 +126,7 @@ Update the files before moving onto the next steps.
 
 ## Step 3. (Extra) Set Up MetalLB
 
-MetalLB can make it a more realistic cluster setup, and allow you to not need to consider too much about the Docker Network (except for the IP CIDR range mentioned above). 
+MetalLB can make it a more realistic cluster setup, and allow you to not need to consider too much about the Docker Network (except for the IP CIDR range mentioned above).
 
 This step isn't required if you are to work out the network setup using NodePort within Docker Network, and also if you are not using KinD, skip this step.
 
@@ -263,14 +263,14 @@ Istio comes with some default dummy certificate provided, but it is certainly no
     # simpler and cleaner. All the certificates will then be created under the
     # same `certs` directory.
     pushd certs > /dev/null
-    
+
     # Before generating the certificate for each cluster, we need to create a
     # Root CA Certificate, which can be used to sign the actual certificates
     # in the next step.
     # As Istio's script is a Makefile, we are using make command. It means we
     # could pass `-f` flag and use different directory if you wish so.
     make -f ./Makefile.selfsigned.mk root-ca
-    
+
     # Although we would be back to the same directory in the next step, making
     # sure that we get back to the original directory we were in before.
     popd > /dev/null
@@ -291,7 +291,7 @@ Istio comes with some default dummy certificate provided, but it is certainly no
     make -f ./Makefile.selfsigned.mk cluster-1-cacerts;
     make -f ./Makefile.selfsigned.mk cluster-2-cacerts;
     make -f ./Makefile.selfsigned.mk cluster-3-cacerts;
-    
+
     # Once we have all the certificates created, get back to the original
     # directory.
     popd > /dev/null
@@ -474,11 +474,11 @@ In this step, we will look at each step of establishing the connection between c
     # specifically for `Gateway` from kubecon-eu-2023.tar.gz, using `--strip`
     # argument to simplify the directory structure.
 
-    # Istio's cross-network-gateway is a simple `Gateway` CR provided by the 
+    # Istio's cross-network-gateway is a simple `Gateway` CR provided by the
     # Istio official repository (you can use a script to generate this).
     # With this resource, we can configure Istio IngressGateway (and other Data
     # Plane components).
-    # 
+    #
     # The configuration is quite simple:
     #
     # apiVersion: networking.istio.io/v1alpha3
@@ -536,7 +536,7 @@ The official way for creating remote secrets use `istioctl create-remote-secret`
 ```sh
 {
     # This step is for cluster-1 -> cluster-2
-    
+
     CONTEXT=kind-cluster-1
     CLUSTER=cluster-2
 
@@ -547,7 +547,7 @@ The official way for creating remote secrets use `istioctl create-remote-secret`
         --namespace istio-system \
         create secret generic istio-remote-secret-$CLUSTER \
         --from-file=$CLUSTER=${CLUSTER}-kubeconfig.yaml
-        
+
     # Next, we also annotate with the network topology, the same way as
     # istioctl.
     kubectl --context $CONTEXT \
@@ -569,7 +569,7 @@ The rest of the steps are exactly the same as above, just for different cluster 
 ```sh
 {
     # This step is for cluster-2 -> cluster-1
-    
+
     CONTEXT=kind-cluster-2
     CLUSTER=cluster-1
 
@@ -592,7 +592,7 @@ The rest of the steps are exactly the same as above, just for different cluster 
 ```sh
 {
     # This step is for cluster-1 -> cluster-3
-    
+
     CONTEXT=kind-cluster-1
     CLUSTER=cluster-3
 
@@ -616,7 +616,7 @@ The rest of the steps are exactly the same as above, just for different cluster 
 ```sh
 {
     # This step is for cluster-2 -> cluster-3
-    
+
     CONTEXT=kind-cluster-2
     CLUSTER=cluster-3
 
@@ -703,11 +703,11 @@ In order to simulate more realistic use cases, the steps here will make use of m
     # Also, because the Prometheus Operator CRDs are quite lengthy and exceeds
     # the limit for client side apply, we are using `--server-side` flag to have
     # them applied on the server instead.
-    kustomize build prometheus/operator-installation | 
+    kustomize build prometheus/operator-installation |
         kubectl apply --context kind-cluster-1 --server-side -f -
-    kustomize build prometheus/operator-installation | 
+    kustomize build prometheus/operator-installation |
         kubectl apply --context kind-cluster-2 --server-side -f -
-    kustomize build prometheus/operator-installation | 
+    kustomize build prometheus/operator-installation |
         kubectl apply --context kind-cluster-3 --server-side -f -
 }
 ```
@@ -744,11 +744,11 @@ The second Prometheus is "istio-federation", which bundles all Prometheus metric
     #   federation later on, by adding a prefix such as "federate:". we would
     #   see how Prometheus "istio-federation" setup takes advantage of this
     #   setup for better metrics management.
-    kustomize build prometheus/istio-collector | 
+    kustomize build prometheus/istio-collector |
         kubectl apply --context kind-cluster-1 -f -
     kustomize build prometheus/istio-collector |
         kubectl apply --context kind-cluster-2 -f -
-    kustomize build prometheus/istio-collector | 
+    kustomize build prometheus/istio-collector |
         kubectl apply --context kind-cluster-3 -f -
 }
 ```
@@ -766,15 +766,15 @@ The second Prometheus is "istio-federation", which bundles all Prometheus metric
     # Istio Sidecar only for certificate handling. The notable difference is
     # that "istio-federation" has a Remote Write endpoint for data retention.
     # This is a simple approach to merge all the metrics taken into a dedicated
-    # central observability cluster, in our case `cluster-3`. 
+    # central observability cluster, in our case `cluster-3`.
     #
     # Prometheus scraping config for this is quite simple. It finds the metrics
     # with "federate:" prefix, and strips the prefix.
-    kustomize build prometheus/istio-federation-cluster-1 | 
+    kustomize build prometheus/istio-federation-cluster-1 |
         kubectl apply --context kind-cluster-1 -f -
-    kustomize build prometheus/istio-federation-cluster-2 | 
+    kustomize build prometheus/istio-federation-cluster-2 |
         kubectl apply --context kind-cluster-2 -f -
-    kustomize build prometheus/istio-federation-cluster-3 | 
+    kustomize build prometheus/istio-federation-cluster-3 |
         kubectl apply --context kind-cluster-3 -f -
 }
 ```

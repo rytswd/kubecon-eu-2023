@@ -546,7 +546,7 @@ The official way for creating remote secrets use `istioctl create-remote-secret`
     kubectl --context $CONTEXT \
         --namespace istio-system \
         create secret generic istio-remote-secret-$CLUSTER \
-        --from-file=$CLUSTER=${CLUSTER}-kubeconfig.yaml
+        --from-file=kubeconfig/${CLUSTER}-kubeconfig.yaml
 
     # Next, we also annotate with the network topology, the same way as
     # istioctl.
@@ -576,7 +576,7 @@ The rest of the steps are exactly the same as above, just for different cluster 
     kubectl --context $CONTEXT \
         --namespace istio-system \
         create secret generic istio-remote-secret-$CLUSTER \
-        --from-file=$CLUSTER=${CLUSTER}-kubeconfig.yaml
+        --from-file=kubeconfig/${CLUSTER}-kubeconfig.yaml
     kubectl --context $CONTEXT \
         --namespace istio-system \
         annotate secret istio-remote-secret-$CLUSTER \
@@ -599,7 +599,7 @@ The rest of the steps are exactly the same as above, just for different cluster 
     kubectl --context $CONTEXT \
         --namespace istio-system \
         create secret generic istio-remote-secret-$CLUSTER \
-        --from-file=$CLUSTER=${CLUSTER}-kubeconfig.yaml
+        --from-file=kubeconfig/${CLUSTER}-kubeconfig.yaml
     kubectl --context $CONTEXT \
         --namespace istio-system \
         annotate secret istio-remote-secret-$CLUSTER \
@@ -623,7 +623,7 @@ The rest of the steps are exactly the same as above, just for different cluster 
     kubectl --context $CONTEXT \
         --namespace istio-system \
         create secret generic istio-remote-secret-$CLUSTER \
-        --from-file=$CLUSTER=${CLUSTER}-kubeconfig.yaml
+        --from-file=kubeconfig/${CLUSTER}-kubeconfig.yaml
     kubectl --context $CONTEXT \
         --namespace istio-system \
         annotate secret istio-remote-secret-$CLUSTER \

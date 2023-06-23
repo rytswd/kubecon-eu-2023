@@ -167,3 +167,15 @@ execute 'helm install --repo https://charts.bitnami.com/bitnami \
     --kube-context kind-cluster-3 \
     --set receive.enabled=true \
     thanos thanos -n monitoring'
+comment "6.2. Install Grafana to cluster-3."
+execute 'helm install --repo https://grafana.github.io/helm-charts \
+    --kube-context kind-cluster-3 \
+    --set sidecar.dashboards.enabled=true \
+    --set sidecar.datasources.enabled=true \
+    grafana grafana -n monitoring'
+comment "6.3. Get Grafana configs specific for the demo."
+execute 'tar -xz -f kubecon-eu-2023.tar.gz \
+    --strip=2 kubecon-eu-2023-main/manifests/grafana'
+comment "6.4. Configure Grafana's Data Source and Create Sample Dashboard."
+execute 'kustomize build grafana |
+    kubectl apply --context kind-cluster-3 -f -'

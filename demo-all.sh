@@ -422,10 +422,22 @@ execute 'helm install --repo https://charts.bitnami.com/bitnami \
     --kube-context kind-cluster-3 \
     --set receive.enabled=true \
     thanos thanos -n monitoring'
+comment "6.2. Install Grafana to cluster-3."
+execute 'helm install --repo https://grafana.github.io/helm-charts \
+    --kube-context kind-cluster-3 \
+    --set sidecar.dashboards.enabled=true \
+    --set sidecar.datasources.enabled=true \
+    grafana grafana -n monitoring'
+comment "6.3. Get Grafana configs specific for the demo."
+execute 'tar -xz -f kubecon-eu-2023.tar.gz \
+    --strip=2 kubecon-eu-2023-main/manifests/grafana'
+comment "6.4. Configure Grafana's Data Source and Create Sample Dashboard."
+execute 'kustomize build grafana |
+    kubectl apply --context kind-cluster-3 -f -'
 
 comment_w "Now, you have all the setup in place 🎉
 
-You can now check cluster-3, which acts as the central observability cluster using Thanos.
+You can now check cluster-3, which acts as the central observability cluster using Thanos and Grafana.
 
 Thanos Query Frontend exposes 10902 port by default, and you can use the following command to test:
 
@@ -435,7 +447,25 @@ Thanos Query Frontend exposes 10902 port by default, and you can use the followi
         10902:10902 -n monitoring
 }
 
-Then, you can access the Thanos Query Frontend UI at http://localhost:10902."
+Then, you can access the Thanos Query Frontend UI at http://localhost:10902.
+
+Grafana exposes 3000 port by default, and you can use the following command to test:
+
+{
+    kubectl port-forward --context kind-cluster-3 \
+        svc/grafana \
+        3000:3000 -n monitoring
+}
+
+Then, you can access the Web UI at http://localhost:3000.
+You can get your 'admin' user password by running:
+
+{
+    kubectl get secret --context kind-cluster-3 --namespace monitoring \
+        grafana -o jsonpath="{.data.admin-password}" \
+        | base64 --decode ; echo
+}
+"
 
 comment_w "Once you are done, you can run the following command to delete all the clusters created by this script.
 

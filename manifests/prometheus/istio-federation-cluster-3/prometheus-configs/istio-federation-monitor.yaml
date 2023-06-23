@@ -23,7 +23,7 @@ spec:
           #   https://karlstoney.com/2020/02/25/federated-prometheus-to-reduce-metric-cardinality/
           - '{__name__=~"federate:(.*)"}'
           # - '{__name__=~"workload:(.*)"}'
-          # - '{__name__=~"pilot(.*)"}'
+          - '{__name__=~"pilot(.*)"}'
       path: /federate
       targetPort: 9090
       honorLabels: true

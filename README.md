@@ -10,11 +10,9 @@
 
 Official Website: https://sched.co/1Hyd7
 
-Original Recording: _To be updated_
+Original Recording: https://youtu.be/6KTzE3LppDg?si=6wuxumwK0AKS6JDG
 
 Original Slide: https://dub.sh/kubecon-eu-2023-mco
-
-Follow-up Video: _To be added_
 
 ## 🌄 About This Repository
 
@@ -26,8 +24,6 @@ This repository holds the supplementary materials for my talk at KubeCon.
 ### About Demo
 
 The demo during the talk was fully based on the input in this repository. You should be able to replicate the same setup following the steps detailed in this repository.
-
-Also, before this talk goes available on YouTube, I will be also working to create some more example setup for using other tools.
 
 ### About Demo Script
 
@@ -52,7 +48,7 @@ In order to run through the demo steps, you will need the following tools:
 - kustomize
 - helm
 
-Also, please note that having 3 KinD clusters will require some significant compute resource on your machine.
+Because the demo is about multi-cluster observability, there will be multiple clusters required. Please note that having 3 KinD clusters will require some significant compute resource on your machine.
 
 ### Simplest, All In One
 
@@ -68,13 +64,16 @@ Please check out [Demo Steps](demo-steps.md) for details.
 
 ### Clean Up
 
-To be updated
+If you followed the demo steps above, you can clean up by simply removing the clusters.
+
+```sh
+{
+    kind delete cluster --name cluster-1
+    kind delete cluster --name cluster-2
+    kind delete cluster --name cluster-3
+}
+```
 
 ### Troubleshooting
 
-To be updated
-
-
-## 🔎 References
-
-To be updated
+If you found any misbehaviour with the setup, please feel free to create an issue. While I'm not intending to maintain with the latest details here, I still check activities and may be able to help.
